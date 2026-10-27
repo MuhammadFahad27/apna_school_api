@@ -3,6 +3,8 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
 import { createDatabaseOptions } from './database.config.js';
+import { DatabaseHealthController } from './database-health.controller.js';
+import { DatabaseHealthService } from './database-health.service.js';
 
 const databaseLogger = new Logger('Database');
 
@@ -33,5 +35,7 @@ const databaseLogger = new Logger('Database');
       },
     }),
   ],
+  controllers: [DatabaseHealthController],
+  providers: [DatabaseHealthService],
 })
 export class DatabaseModule {}
