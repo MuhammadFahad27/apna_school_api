@@ -9,4 +9,25 @@ export class AppController {
   getHello(): string {
     return this.appService.getHello();
   }
+
+  @Get('health/server')
+  getServerHealth() {
+    return {
+      status: 'up',
+      service: 'farm_dost_backend',
+      environment: process.env.NODE_ENV ?? 'production',
+      timestamp: new Date().toISOString(),
+      uptimeSeconds: Math.floor(process.uptime()),
+    };
+  }
+
+  @Get('health')
+  getApplicationHealth() {
+    return {
+      status: 'up',
+      service: 'farm_dost_backend',
+      message: 'Backend is running successfully',
+      timestamp: new Date().toISOString(),
+    };
+  }
 }
