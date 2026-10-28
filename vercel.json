@@ -5,6 +5,14 @@
       "destination": "/api/health"
     },
     {
+      "source": "/health/database",
+      "destination": "/api/health/database"
+    },
+    {
+      "source": "/health/cloudinary",
+      "destination": "/api/health/cloudinary"
+    },
+    {
       "source": "/(.*)",
       "destination": "/api"
     }
