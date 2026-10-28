@@ -20,6 +20,18 @@ export default async function vercelHandler(
   request: Request,
   response: Response,
 ): Promise<void> {
+  const requestPath = request.url?.split('?')[0];
+
+  if (requestPath === '/health' || requestPath === '/health/server') {
+    response.status(200).json({
+      status: 'up',
+      service: 'farm_dost_backend',
+      message: 'Backend is running successfully',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
   handlerPromise ??= createHandler();
   const handler = await handlerPromise;
   handler(request, response);
