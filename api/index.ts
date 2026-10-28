@@ -11,6 +11,9 @@ async function createHandler(): Promise<ExpressHandler> {
     instrument: ObserveInstrument,
   });
 
+  app.enableCors({
+    origin: process.env.FRONTEND_URL ?? false,
+  });
   await app.init();
 
   return app.getHttpAdapter().getInstance() as ExpressHandler;
