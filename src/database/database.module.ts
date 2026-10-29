@@ -5,6 +5,9 @@ import { DataSource } from 'typeorm';
 import { createDatabaseOptions } from './database.config.js';
 import { DatabaseHealthController } from './database-health.controller.js';
 import { DatabaseHealthService } from './database-health.service.js';
+import { User } from '../users/user.entity.js';
+import { Farm } from '../farms/farm.entity.js';
+import { Employee } from '../farms/employee.entity.js';
 
 const databaseLogger = new Logger('Database');
 
@@ -13,7 +16,10 @@ const databaseLogger = new Logger('Database');
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: createDatabaseOptions,
+      useFactory: (config: ConfigService) => ({
+        ...createDatabaseOptions(config),
+        entities: [User, Farm, Employee],
+      }),
       dataSourceFactory: async (options) => {
         if (!options) {
           throw new Error('Database connection options were not created.');

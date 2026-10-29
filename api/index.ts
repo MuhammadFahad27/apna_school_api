@@ -1,4 +1,5 @@
 import { NestFactory } from '@nestjs/core';
+import { ValidationPipe } from '@nestjs/common';
 import type { Request, Response } from 'express';
 import { AppModule, ObserveInstrument } from '../src/app.module.js';
 
@@ -11,6 +12,7 @@ async function createHandler(): Promise<ExpressHandler> {
     instrument: ObserveInstrument,
   });
 
+  app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
   app.enableCors({
     origin: process.env.FRONTEND_URL ?? false,
   });

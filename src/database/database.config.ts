@@ -1,9 +1,16 @@
 import { ConfigService } from '@nestjs/config';
-import { type TypeOrmModuleOptions } from '@nestjs/typeorm';
+
+export type DatabaseOptions = {
+  type: 'postgres';
+  url: string;
+  ssl: { rejectUnauthorized: false };
+  autoLoadEntities: true;
+  synchronize: false;
+};
 
 export function createDatabaseOptions(
   configService: ConfigService,
-): TypeOrmModuleOptions {
+): DatabaseOptions {
   const url = configService.get<string>('DATABASE_URL');
 
   if (!url) {
