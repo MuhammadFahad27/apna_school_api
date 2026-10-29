@@ -11,6 +11,7 @@ import {
 import {
   ArchiveFarmDto,
   CreateFarmOwnerDto,
+  ResetOwnerPasswordDto,
   SuspendFarmDto,
   UpdateEmployeeStatusDto,
 } from './dto/index.js';
@@ -70,8 +71,11 @@ export class FarmsController {
 
   @Post(':id/reset-password')
   @Roles(UserRole.ADMIN)
-  resetOwnerPassword(@Param('id') id: string) {
-    return this.farmsService.resetOwnerPassword(id);
+  resetOwnerPassword(
+    @Param('id') id: string,
+    @Body() dto?: ResetOwnerPasswordDto,
+  ) {
+    return this.farmsService.resetOwnerPassword(id, dto);
   }
 
   @Post(':id/archive')

@@ -12,6 +12,7 @@ import { DataSource, Repository } from 'typeorm';
 import {
   ArchiveFarmDto,
   CreateFarmOwnerDto,
+  ResetOwnerPasswordDto,
   SuspendFarmDto,
   UpdateEmployeeStatusDto,
 } from './dto/index.js';
@@ -372,9 +373,9 @@ export class FarmsService {
   }
 
   /**
-   * Reset Owner's password: generates new temporary password and returns it ONCE to admin
+   * Reset Owner's password: sets new password and sends it to owner's email
    */
-  async resetOwnerPassword(farmId: string) {
+  async resetOwnerPassword(farmId: string, dto?: ResetOwnerPasswordDto) {
     const farm = await this.farms.findOne({
       where: { id: farmId },
       relations: { owner: true },
@@ -384,8 +385,8 @@ export class FarmsService {
       throw new NotFoundException(`Farm or owner for ID "${farmId}" was not found.`);
     }
 
-    const newTemporaryPassword = this.generateTemporaryPassword();
-    farm.owner.passwordHash = await bcrypt.hash(newTemporaryPassword, 12);
+    const newPassword = dto?.password?.trim() || this.generateTemporaryPassword();
+    farm.owner.passwordHash = await bcrypt.hash(newPassword, 12);
     await this.users.save(farm.owner);
 
     if (farm.owner.email) {
@@ -393,7 +394,7 @@ export class FarmsService {
         .sendPasswordReset(
           farm.owner.email,
           farm.owner.name || farm.name,
-          newTemporaryPassword,
+          newPassword,
         )
         .catch((err) => {
           this.logger.warn(`Could not send password reset email: ${err.message}`);
@@ -406,7 +407,7 @@ export class FarmsService {
       ownerName: farm.owner.name,
       phone: farm.owner.phone,
       email: farm.owner.email,
-      temporaryPassword: newTemporaryPassword,
+      temporaryPassword: newPassword,
     };
   }
 
