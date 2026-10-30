@@ -8,6 +8,7 @@ export type AuthUser = {
   email: string | null;
   role: UserRole;
   farmId?: string;
+  employeeId?: string;
 };
 
 export type AuthenticatedRequest = Request & {

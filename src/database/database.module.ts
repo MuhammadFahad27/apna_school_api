@@ -8,6 +8,7 @@ import { DatabaseHealthService } from './database-health.service.js';
 import { User } from '../users/user.entity.js';
 import { Farm } from '../farms/farm.entity.js';
 import { Employee } from '../farms/employee.entity.js';
+import { SupportRequest } from '../support/support-request.entity.js';
 
 const databaseLogger = new Logger('Database');
 
@@ -18,7 +19,7 @@ const databaseLogger = new Logger('Database');
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
         ...createDatabaseOptions(config),
-        entities: [User, Farm, Employee],
+        entities: [User, Farm, Employee, SupportRequest],
       }),
       dataSourceFactory: async (options) => {
         if (!options) {

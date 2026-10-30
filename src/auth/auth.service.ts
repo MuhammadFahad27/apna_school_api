@@ -1,18 +1,21 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
+import { InjectRepository } from '@nestjs/typeorm';
 import * as bcrypt from 'bcrypt';
 import { Repository } from 'typeorm';
-import { InjectRepository } from '@nestjs/typeorm';
 import { LoginDto } from './dto/index.js';
-import { User, UserRole, UserStatus } from '../users/user.entity.js';
+import { Employee } from '../farms/employee.entity.js';
 import { Farm, FarmStatus } from '../farms/farm.entity.js';
+import { User, UserRole, UserStatus } from '../users/user.entity.js';
 
 @Injectable()
 export class AuthService {
   constructor(
     @InjectRepository(User) private readonly users: Repository<User>,
     @InjectRepository(Farm) private readonly farms: Repository<Farm>,
+    @InjectRepository(Employee)
+    private readonly employees: Repository<Employee>,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
   ) {}
@@ -40,6 +43,7 @@ export class AuthService {
     }
 
     let farmId: string | undefined;
+    let employeeId: string | undefined;
 
     // If user is a farm owner, verify the farm is not inactive
     if (user.role === UserRole.FARM_OWNER) {
@@ -53,7 +57,35 @@ export class AuthService {
           throw new UnauthorizedException(`Organization is inactive.${reason}`);
         }
       }
+    } else if (
+      user.role === UserRole.MANAGER ||
+      user.role === UserRole.WORKER
+    ) {
+      // If user is staff, find their employee record
+      const employee = await this.employees.findOne({
+        where: [{ userId: user.id }, { phone: user.phone || '' }],
+        relations: { farm: true },
+      });
+
+      if (!employee || !employee.isActive) {
+        throw new UnauthorizedException('Staff member account is inactive.');
+      }
+
+      if (employee.farm?.status === FarmStatus.INACTIVE) {
+        throw new UnauthorizedException('Farm organization is inactive.');
+      }
+
+      farmId = employee.farmId;
+      employeeId = employee.id;
+
+      // Update employee last login time
+      employee.lastLoginAt = new Date();
+      await this.employees.save(employee);
     }
+
+    // Update user last login time
+    user.lastLoginAt = new Date();
+    await this.users.save(user);
 
     const payload = {
       id: user.id,
@@ -62,6 +94,7 @@ export class AuthService {
       email: user.email,
       role: user.role,
       farmId,
+      employeeId,
     };
 
     return {

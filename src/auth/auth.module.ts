@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { Employee } from '../farms/employee.entity.js';
 import { Farm } from '../farms/farm.entity.js';
 import { User } from '../users/user.entity.js';
 import { AuthController } from './auth.controller.js';
@@ -12,7 +13,7 @@ import { RolesGuard } from './roles.guard.js';
 @Module({
   imports: [
     ConfigModule,
-    TypeOrmModule.forFeature([User, Farm]),
+    TypeOrmModule.forFeature([User, Farm, Employee]),
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],

@@ -4,6 +4,7 @@ import { ConfigService } from '@nestjs/config';
 import { DataSource, type DataSourceOptions } from 'typeorm';
 import { Employee } from '../farms/employee.entity.js';
 import { Farm } from '../farms/farm.entity.js';
+import { SupportRequest } from '../support/support-request.entity.js';
 import { User } from '../users/user.entity.js';
 import { createDatabaseOptions } from './database.config.js';
 
@@ -17,7 +18,7 @@ const options: DataSourceOptions = {
   type: 'postgres',
   url: databaseOptions.url,
   ssl: databaseOptions.ssl,
-  entities: [User, Farm, Employee],
+  entities: [User, Farm, Employee, SupportRequest],
   migrations: ['dist/database/migrations/*.js'],
 };
 

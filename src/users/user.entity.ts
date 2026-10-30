@@ -9,6 +9,8 @@ import {
 export enum UserRole {
   ADMIN = 'admin',
   FARM_OWNER = 'farm_owner',
+  MANAGER = 'manager',
+  WORKER = 'worker',
 }
 
 export enum UserStatus {
@@ -44,6 +46,9 @@ export class User {
 
   @Column({ type: 'text', nullable: true })
   suspensionReason!: string | null;
+
+  @Column({ type: 'timestamp', nullable: true })
+  lastLoginAt!: Date | null;
 
   @CreateDateColumn()
   createdAt!: Date;
