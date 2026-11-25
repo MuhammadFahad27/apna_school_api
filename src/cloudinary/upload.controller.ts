@@ -34,7 +34,7 @@ export class UploadController {
     if (file?.buffer) {
       const url = await this.cloudinaryService.uploadBuffer(
         file.buffer,
-        'farm_dost/employees',
+        'school_portal/uploads',
       );
       return { url };
     }
@@ -42,7 +42,7 @@ export class UploadController {
     if (base64Image && typeof base64Image === 'string') {
       const url = await this.cloudinaryService.uploadBase64(
         base64Image,
-        'farm_dost/employees',
+        'school_portal/uploads',
       );
       return { url };
     }

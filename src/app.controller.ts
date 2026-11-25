@@ -14,7 +14,7 @@ export class AppController {
   getServerHealth() {
     return {
       status: 'up',
-      service: 'farm_dost_backend',
+      service: 'school_management_backend',
       environment: process.env.NODE_ENV ?? 'production',
       timestamp: new Date().toISOString(),
       uptimeSeconds: Math.floor(process.uptime()),
@@ -25,8 +25,8 @@ export class AppController {
   getApplicationHealth() {
     return {
       status: 'up',
-      service: 'farm_dost_backend',
-      message: 'Backend is running successfully',
+      service: 'school_management_backend',
+      message: 'School Management Backend is running successfully',
       timestamp: new Date().toISOString(),
     };
   }

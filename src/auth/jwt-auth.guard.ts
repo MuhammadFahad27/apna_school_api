@@ -39,6 +39,7 @@ export class JwtAuthGuard implements CanActivate {
           phone: true,
           email: true,
           name: true,
+          school_id: true,
         },
       });
 
@@ -49,6 +50,7 @@ export class JwtAuthGuard implements CanActivate {
       request.user = {
         ...payload,
         role: user.role,
+        schoolId: user.school_id || payload.schoolId,
       };
 
       return true;

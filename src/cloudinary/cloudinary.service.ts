@@ -28,7 +28,7 @@ export class CloudinaryService {
    */
   async uploadBuffer(
     buffer: Buffer,
-    folder = 'farm_dost/employees',
+    folder = 'school_portal/uploads',
   ): Promise<string> {
     return new Promise((resolve, reject) => {
       const uploadStream = cloudinary.uploader.upload_stream(
@@ -60,7 +60,7 @@ export class CloudinaryService {
    */
   async uploadBase64(
     base64Data: string,
-    folder = 'farm_dost/employees',
+    folder = 'school_portal/uploads',
   ): Promise<string> {
     const result = await cloudinary.uploader.upload(base64Data, {
       folder,

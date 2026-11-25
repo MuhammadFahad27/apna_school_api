@@ -1,5 +1,5 @@
 {
-  "name": "farm_dost_backend",
+  "name": "apna_school_api",
   "version": "0.0.1",
   "description": "",
   "author": "",
@@ -17,6 +17,7 @@
     "migration:generate": "node scripts/migration-generate.js",
     "migration:run": "npm run build && typeorm migration:run -d dist/database/data-source.js",
     "seed": "npm run build && node dist/database/seed.js",
+    "db:reset": "npm run build && node dist/database/reset-db.js",
     "lint": "oxlint --type-aware src/ test/",
     "test": "vitest run",
     "test:watch": "vitest",

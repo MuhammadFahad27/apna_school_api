@@ -1,79 +1,100 @@
 import 'reflect-metadata';
+import dotenv from 'dotenv';
 import * as bcrypt from 'bcrypt';
-import { ConfigService } from '@nestjs/config';
 import dataSource from './data-source.js';
 import { User, UserRole, UserStatus } from '../users/user.entity.js';
 
+dotenv.config({ path: '.env' });
+dotenv.config({ path: 'src/.env' });
+
 async function seed(): Promise<void> {
-  const config = new ConfigService();
-  const email = config.get<string>('ADMIN_EMAIL');
-  const password = config.get<string>('ADMIN_PASSWORD');
-
-  if (!email || !password) {
-    throw new Error('ADMIN_EMAIL and ADMIN_PASSWORD must be configured.');
-  }
-
-  if (password.length < 8) {
-    throw new Error('ADMIN_PASSWORD must be at least 8 characters.');
-  }
-
-  const normalizedEmail = email.trim().toLowerCase();
-  const passwordHash = await bcrypt.hash(password, 12);
+  console.log('--- Starting Super Admin Seed (Safe Upsert) ---');
 
   await dataSource.initialize();
-  const users = dataSource.getRepository(User);
+  console.log('✓ Database connection established.');
 
-  // Check for any existing admin user or user with this email
-  const existingAdmins = await users.find({
-    where: [{ role: UserRole.ADMIN }, { email: normalizedEmail }],
+  const usersRepo = dataSource.getRepository(User);
+
+  // =========================================================================
+  // SAFE SINGLETON SUPER ADMIN UPSERT (Does NOT wipe existing data)
+  // =========================================================================
+  const superAdminEmail = (process.env.SUPER_ADMIN_EMAIL || '').trim().toLowerCase();
+  const superAdminPassword = process.env.SUPER_ADMIN_PASSWORD || '';
+  const superAdminName = process.env.SUPER_ADMIN_NAME?.trim() || 'Platform Super Admin';
+  const superAdminPhone = process.env.SUPER_ADMIN_PHONE?.trim() || '+923000000000';
+
+  if (!superAdminEmail || !superAdminPassword) {
+    throw new Error(
+      'SUPER_ADMIN_EMAIL and SUPER_ADMIN_PASSWORD must be configured in your .env file.',
+    );
+  }
+
+  if (superAdminPassword.length < 6) {
+    throw new Error('SUPER_ADMIN_PASSWORD in .env must be at least 6 characters long.');
+  }
+
+  const superAdminHash = await bcrypt.hash(superAdminPassword, 12);
+
+  // 1. Check for any existing super_admin accounts
+  const allSuperAdmins = await usersRepo.find({
+    where: { role: UserRole.SUPER_ADMIN },
     order: { createdAt: 'ASC' },
   });
 
-  if (existingAdmins.length > 0) {
-    // 1. Prefer the account that already has the target email, otherwise use the first admin
-    const primaryAdmin =
-      existingAdmins.find((u) => u.email?.toLowerCase() === normalizedEmail) ||
-      existingAdmins[0];
+  // 2. Check if a user with this email already exists
+  const userWithEmail = await usersRepo.findOne({
+    where: { email: superAdminEmail },
+  });
 
-    // 2. Identify any other admin accounts as duplicates
-    const duplicates = existingAdmins.filter((u) => u.id !== primaryAdmin.id);
+  // 3. Check if a user with this phone already exists
+  const userWithPhone = await usersRepo.findOne({
+    where: { phone: superAdminPhone },
+  });
 
-    // 3. Remove duplicate accounts FIRST to eliminate unique constraint collisions on email
-    if (duplicates.length > 0) {
-      await users.remove(duplicates);
-      console.log(`Cleaned up ${duplicates.length} duplicate admin account(s).`);
-    }
+  // Identify the target Super Admin record
+  const primarySuperAdmin =
+    userWithEmail ||
+    allSuperAdmins[0] ||
+    userWithPhone ||
+    usersRepo.create();
 
-    // 4. Safely update the primary admin
-    primaryAdmin.email = normalizedEmail;
-    primaryAdmin.passwordHash = passwordHash;
-    primaryAdmin.role = UserRole.ADMIN;
-    primaryAdmin.isActive = true;
-    primaryAdmin.status = UserStatus.ACTIVE;
-    if (!primaryAdmin.name) {
-      primaryAdmin.name = 'System Administrator';
-    }
-
-    await users.save(primaryAdmin);
-    console.log(`Admin user (${primaryAdmin.id}) successfully updated with email "${normalizedEmail}" and new password.`);
-    return;
+  // If there are duplicate/placeholder super_admin accounts, remove extras
+  const extraSuperAdmins = allSuperAdmins.filter((u) => u.id !== primarySuperAdmin.id);
+  if (extraSuperAdmins.length > 0) {
+    await usersRepo.remove(extraSuperAdmins);
+    console.log(`✓ Removed ${extraSuperAdmins.length} redundant super_admin record(s).`);
   }
 
-  // Create single admin user if none exists
-  await users.save({
-    name: 'System Administrator',
-    email: normalizedEmail,
-    passwordHash,
-    role: UserRole.ADMIN,
-    isActive: true,
-    status: UserStatus.ACTIVE,
-  });
-  console.log(`Admin user created for "${normalizedEmail}".`);
+  // If a DIFFERENT user record currently holds the phone, release the phone
+  if (userWithPhone && userWithPhone.id !== primarySuperAdmin.id) {
+    userWithPhone.phone = null;
+    await usersRepo.save(userWithPhone);
+    console.log(`✓ Released phone ${superAdminPhone} from conflicting account.`);
+  }
+
+  // UPDATE the single Super Admin record
+  primarySuperAdmin.name = superAdminName;
+  primarySuperAdmin.email = superAdminEmail;
+  primarySuperAdmin.phone = superAdminPhone;
+  primarySuperAdmin.passwordHash = superAdminHash;
+  primarySuperAdmin.role = UserRole.SUPER_ADMIN;
+  primarySuperAdmin.isActive = true;
+  primarySuperAdmin.status = UserStatus.ACTIVE;
+  primarySuperAdmin.school_id = null;
+
+  await usersRepo.save(primarySuperAdmin);
+
+  console.log(`✓ Super Admin record verified/updated (ID: ${primarySuperAdmin.id}):`);
+  console.log(`   Name:     ${primarySuperAdmin.name}`);
+  console.log(`   Email:    ${primarySuperAdmin.email}`);
+  console.log(`   Phone:    ${primarySuperAdmin.phone}`);
+  console.log(`   Role:     ${primarySuperAdmin.role}`);
+  console.log('--- Super Admin Seed Completed Successfully ---');
 }
 
 seed()
   .catch((error: unknown) => {
-    console.error(error);
+    console.error('Seed execution error:', error);
     process.exitCode = 1;
   })
   .finally(async () => {
