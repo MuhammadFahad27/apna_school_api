@@ -17,6 +17,10 @@ import {
 } from '../entities/student.entity.js';
 
 export class CreateStudentDto {
+  @IsUUID()
+  @IsOptional()
+  school_id?: string;
+
   // 1. Personal Information
   @IsString()
   @IsOptional()

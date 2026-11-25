@@ -7,7 +7,8 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { User, UserStatus } from '../users/user.entity.js';
+import { User, UserRole, UserStatus } from '../users/user.entity.js';
+import { SchoolStatus } from '../schools/entities/school.entity.js';
 import type { AuthenticatedRequest, AuthUser } from './auth.types.js';
 
 @Injectable()
@@ -28,23 +29,22 @@ export class JwtAuthGuard implements CanActivate {
     try {
       const payload = this.jwtService.verify<AuthUser>(token);
 
-      // Instant token invalidation if account is deactivated
+      // Instant token invalidation if account or school is deactivated/suspended
       const user = await this.users.findOne({
         where: { id: payload.id },
-        select: {
-          id: true,
-          isActive: true,
-          status: true,
-          role: true,
-          phone: true,
-          email: true,
-          name: true,
-          school_id: true,
-        },
+        relations: { school: true },
       });
 
       if (!user || !user.isActive || user.status === UserStatus.INACTIVE) {
         throw new UnauthorizedException('Account has been deactivated.');
+      }
+
+      if (
+        user.role !== UserRole.SUPER_ADMIN &&
+        user.school &&
+        user.school.status === SchoolStatus.SUSPENDED
+      ) {
+        throw new UnauthorizedException('School subscription has been suspended.');
       }
 
       request.user = {

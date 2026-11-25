@@ -12,7 +12,8 @@ import { MoreThan, Repository } from 'typeorm';
 import { LoginDto } from './dto/index.js';
 import { ForgotPasswordDto } from './dto/forgot-password.dto.js';
 import { ResetPasswordDto } from './dto/reset-password.dto.js';
-import { User, UserStatus } from '../users/user.entity.js';
+import { User, UserRole, UserStatus } from '../users/user.entity.js';
+import { SchoolStatus } from '../schools/entities/school.entity.js';
 import { MailService } from '../mail/mail.service.js';
 
 @Injectable()
@@ -45,6 +46,15 @@ export class AuthService {
         ? ` Reason: ${user.suspensionReason}`
         : '';
       throw new UnauthorizedException(`Account is inactive.${reason}`);
+    }
+
+    // Block login if school is suspended (Super Admin is never blocked)
+    if (user.role !== UserRole.SUPER_ADMIN && user.school) {
+      if (user.school.status === SchoolStatus.SUSPENDED) {
+        throw new UnauthorizedException(
+          'Your school subscription/account is currently suspended. Please contact platform administration.',
+        );
+      }
     }
 
     // Update user last login time

@@ -13,6 +13,7 @@ import {
 } from './entities/student.entity.js';
 import { Class } from '../classes/entities/class.entity.js';
 import { Section } from '../sections/entities/section.entity.js';
+import { School } from '../schools/entities/school.entity.js';
 import { CreateStudentDto } from './dto/create-student.dto.js';
 import { UpdateStudentDto } from './dto/update-student.dto.js';
 import { QueryStudentsDto } from './dto/query-students.dto.js';
@@ -26,6 +27,8 @@ export class StudentsService {
     private readonly classesRepo: Repository<Class>,
     @InjectRepository(Section)
     private readonly sectionsRepo: Repository<Section>,
+    @InjectRepository(School)
+    private readonly schoolsRepo: Repository<School>,
   ) {}
 
   private async generateStudentId(): Promise<string> {
@@ -50,7 +53,28 @@ export class StudentsService {
     return num;
   }
 
-  async createStudent(dto: CreateStudentDto, userId?: string): Promise<Student> {
+  async createStudent(
+    dto: CreateStudentDto,
+    userId?: string,
+    userSchoolId?: string,
+  ): Promise<Student> {
+    const schoolId = dto.school_id || userSchoolId;
+
+    // Enforce subscription plan student limit
+    if (schoolId) {
+      const school = await this.schoolsRepo.findOne({ where: { id: schoolId } });
+      if (school && school.max_students) {
+        const activeCount = await this.studentsRepo.count({
+          where: { school_id: schoolId, student_status: StudentStatus.ACTIVE },
+        });
+        if (activeCount >= school.max_students) {
+          throw new BadRequestException(
+            `School student limit reached (${school.max_students} students allowed on ${school.plan} plan). Please upgrade your plan.`,
+          );
+        }
+      }
+    }
+
     // 1. Validate Class & Section
     const cls = await this.classesRepo.findOne({ where: { id: dto.class_id } });
     if (!cls) {
@@ -99,6 +123,7 @@ export class StudentsService {
       father_name: dto.father_name.trim(),
       father_contact_number: dto.father_contact_number.trim(),
       emergency_contact_number: dto.emergency_contact_number.trim(),
+      school_id: schoolId || null,
       monthly_fee: dto.monthly_fee !== undefined ? Number(dto.monthly_fee) : 0,
       nationality: dto.nationality?.trim() || 'Pakistani',
       country: dto.country?.trim() || 'Pakistan',

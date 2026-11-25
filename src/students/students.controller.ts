@@ -26,7 +26,8 @@ export class StudentsController {
   @Post()
   create(@Body() dto: CreateStudentDto, @Request() req: any) {
     const userId = req.user?.id;
-    return this.studentsService.createStudent(dto, userId);
+    const schoolId = req.user?.schoolId;
+    return this.studentsService.createStudent(dto, userId, schoolId);
   }
 
   @Get('stats')

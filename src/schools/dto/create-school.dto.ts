@@ -6,6 +6,7 @@ import {
   IsOptional,
   IsString,
   Min,
+  ValidateIf,
 } from 'class-validator';
 import { SchoolStatus, SubscriptionPlan } from '../entities/school.entity.js';
 
@@ -30,8 +31,9 @@ export class CreateSchoolDto {
   @IsOptional()
   phone?: string;
 
-  @IsEmail()
   @IsOptional()
+  @ValidateIf((o) => Boolean(o.email && typeof o.email === 'string' && o.email.trim() !== ''))
+  @IsEmail()
   email?: string;
 
   @IsString()
