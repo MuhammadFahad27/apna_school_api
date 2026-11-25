@@ -21,12 +21,25 @@ export type DatabaseOptions = {
 export function createDatabaseOptions(
   configService: ConfigService,
 ): DatabaseOptions {
-  let url = configService.get<string>('DATABASE_URL');
+  let url = configService.get<string>('DATABASE_URL') || configService.get<string>('DATABASE_URI');
 
   if (!url) {
     throw new Error(
       'DATABASE_URL is not configured. Add it to .env or src/.env.',
     );
+  }
+
+  // Handle unencoded @ in password (e.g. postgresql://user:pass@word@host:port/db)
+  const atMatches = [...url.matchAll(/@/g)];
+  if (atMatches.length > 1) {
+    const lastAtIndex = url.lastIndexOf('@');
+    const firstColonIndex = url.indexOf(':', url.indexOf('://') + 3);
+    if (firstColonIndex !== -1 && lastAtIndex > firstColonIndex) {
+      const prefix = url.substring(0, firstColonIndex + 1);
+      const rawPassword = url.substring(firstColonIndex + 1, lastAtIndex);
+      const hostPart = url.substring(lastAtIndex);
+      url = `${prefix}${encodeURIComponent(decodeURIComponent(rawPassword))}${hostPart}`;
+    }
   }
 
   // Strip incompatible query parameters like channel_binding that cause ECONNRESET in node-postgres
@@ -38,13 +51,13 @@ export function createDatabaseOptions(
     ssl: { rejectUnauthorized: false },
     autoLoadEntities: true,
     synchronize: false,
-    connectTimeoutMS: 30000,
+    connectTimeoutMS: 15000,
     extra: {
-      max: 5,                           // Neon free tier: low pool size
-      min: 0,                           // allow pool to drain fully
-      connectionTimeoutMillis: 30000,   // 30s — Neon cold-start can take ~10-15s
-      idleTimeoutMillis: 10000,         // release idle connections quickly
-      acquireTimeoutMillis: 30000,      // pg-pool acquire timeout
+      max: 5,
+      min: 0,
+      connectionTimeoutMillis: 15000,
+      idleTimeoutMillis: 10000,
+      acquireTimeoutMillis: 15000,
       keepAlive: true,
       keepAliveInitialDelayMillis: 10000,
     },

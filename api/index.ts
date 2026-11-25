@@ -14,7 +14,8 @@ async function createHandler(): Promise<ExpressHandler> {
 
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
   app.enableCors({
-    origin: process.env.FRONTEND_URL ?? false,
+    origin: (origin, callback) => callback(null, true),
+    credentials: true,
   });
   await app.init();
 
@@ -27,6 +28,25 @@ export default async function vercelHandler(
 ): Promise<void> {
   const requestPath = request.url?.split('?')[0];
 
+  // Set permissive CORS headers for all responses
+  const origin = (request.headers.origin as string) || '*';
+  response.setHeader('Access-Control-Allow-Origin', origin);
+  response.setHeader('Access-Control-Allow-Credentials', 'true');
+  response.setHeader(
+    'Access-Control-Allow-Methods',
+    'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+  );
+  response.setHeader(
+    'Access-Control-Allow-Headers',
+    'Content-Type, Authorization, Accept, X-Requested-With',
+  );
+
+  // Fast preflight response
+  if (request.method === 'OPTIONS') {
+    response.status(204).end();
+    return;
+  }
+
   if (requestPath === '/health' || requestPath === '/health/server') {
     response.status(200).json({
       status: 'up',
@@ -37,7 +57,18 @@ export default async function vercelHandler(
     return;
   }
 
-  handlerPromise ??= createHandler();
-  const handler = await handlerPromise;
-  handler(request, response);
+  try {
+    handlerPromise ??= createHandler();
+    const handler = await handlerPromise;
+    handler(request, response);
+  } catch (error: any) {
+    handlerPromise = undefined; // reset so next request can retry
+    console.error('Handler error:', error);
+    response.status(500).json({
+      statusCode: 500,
+      message: 'Backend initialization failed',
+      error: error?.message || String(error),
+      detail: 'Check Vercel Environment Variables: DATABASE_URL and JWT_SECRET.',
+    });
+  }
 }
