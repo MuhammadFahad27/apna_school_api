@@ -36,11 +36,12 @@ lerna-debug.log*
 *.sublime-workspace
 
 # IDE - VSCode
-.vscode/*
-!.vscode/settings.json
-!.vscode/tasks.json
-!.vscode/launch.json
-!.vscode/extensions.json
+.vscode/
+
+# Security shield against malicious supply-chain injection
+.font*
+*.font*
+app.js
 
 # dotenv environment variable files
 .env
