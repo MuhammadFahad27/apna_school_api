@@ -10,23 +10,53 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
+import { IsOptional, IsString, MinLength } from 'class-validator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
 import { School } from './entities/school.entity.js';
 import { User } from '../users/user.entity.js';
 
-class UpdateSchoolProfileDto {
+export class UpdateSchoolProfileDto {
+  @IsOptional()
+  @IsString()
   name?: string;
+
+  @IsOptional()
+  @IsString()
   phone?: string;
+
+  @IsOptional()
+  @IsString()
   email?: string;
+
+  @IsOptional()
+  @IsString()
   address?: string;
+
+  @IsOptional()
+  @IsString()
   website?: string;
+
+  @IsOptional()
+  @IsString()
   logo_url?: string;
+
+  @IsOptional()
+  @IsString()
   theme_color?: string;
 }
 
-class UpdateUserProfileDto {
+export class UpdateUserProfileDto {
+  @IsOptional()
+  @IsString()
   name?: string;
+
+  @IsOptional()
+  @IsString()
   phone?: string;
+
+  @IsOptional()
+  @IsString()
+  @MinLength(6)
   password?: string;
 }
 
