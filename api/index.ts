@@ -1,16 +1,14 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import type { Request, Response } from 'express';
-import { AppModule, ObserveInstrument } from '../src/app.module.js';
+import { AppModule } from '../src/app.module.js';
 
 type ExpressHandler = (request: Request, response: Response) => void;
 
 let handlerPromise: Promise<ExpressHandler> | undefined;
 
 async function createHandler(): Promise<ExpressHandler> {
-  const app = await NestFactory.create(AppModule, {
-    instrument: ObserveInstrument,
-  });
+  const app = await NestFactory.create(AppModule);
 
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
   app.enableCors({
@@ -50,10 +48,33 @@ export default async function vercelHandler(
   if (requestPath === '/health' || requestPath === '/health/server') {
     response.status(200).json({
       status: 'up',
-      service: 'farm_dost_backend',
+      service: 'apna_school_api',
       message: 'Backend is running successfully',
       timestamp: new Date().toISOString(),
     });
+    return;
+  }
+
+  if (requestPath === '/health/db-check') {
+    try {
+      const { Client } = await import('pg');
+      const dbUrl = process.env.DATABASE_URL || process.env.DATABASE_URI;
+      if (!dbUrl) {
+        response.status(500).json({ status: 'error', message: 'DATABASE_URL or DATABASE_URI not found in env' });
+        return;
+      }
+      const client = new Client({
+        connectionString: dbUrl,
+        ssl: { rejectUnauthorized: false },
+        connectionTimeoutMillis: 8000,
+      });
+      await client.connect();
+      const res = await client.query('SELECT NOW() as now, count(*)::int as user_count from users;');
+      await client.end();
+      response.status(200).json({ status: 'connected', data: res.rows[0] });
+    } catch (err: any) {
+      response.status(500).json({ status: 'error', message: err.message, stack: err.stack });
+    }
     return;
   }
 

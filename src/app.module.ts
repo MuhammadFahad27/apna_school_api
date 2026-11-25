@@ -1,6 +1,5 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { createObserveModule } from '@nestjs/observe';
 import { AppController } from './app.controller.js';
 import { AppService } from './app.service.js';
 import { AuthModule } from './auth/auth.module.js';
@@ -18,8 +17,6 @@ import { CloudinaryModule } from './cloudinary/cloudinary.module.js';
 import { DatabaseModule } from './database/database.module.js';
 import { MailModule } from './mail/mail.module.js';
 import { SchoolsModule } from './schools/schools.module.js';
-
-export const { ObserveModule, ObserveInstrument } = createObserveModule();
 
 @Module({
   imports: [
@@ -42,11 +39,6 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
     StaffModule,
     ExpensesModule,
     DashboardModule,
-    ObserveModule.forRoot({
-      appKey: process.env.OBSERVE_APP_KEY ?? 'YOUR_APP_KEY',
-      appSecret: process.env.OBSERVE_APP_SECRET ?? 'YOUR_APP_SECRET',
-      serviceId: 'school_management_backend',
-    }),
   ],
   controllers: [AppController],
   providers: [AppService],
